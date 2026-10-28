@@ -14,7 +14,7 @@ def get_data(symbol: str, interval: str, limit: int) -> pd.DataFrame:
     # Source : Yahoo Finance (gratuit, sans cle). Binance bloque les serveurs Streamlit.
     yahoo_symbol = symbol.replace("USDT", "-USD")
     yahoo_interval = {"1d": "1d", "4h": "1h", "1h": "1h"}[interval]
-    range_ = "max" if interval == "1d" else "730d"
+    range_ = "5y" if interval == "1d" else "730d"
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}"
     headers = {"User-Agent": "Mozilla/5.0"}
     r = requests.get(url, params={"interval": yahoo_interval, "range": range_},
