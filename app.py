@@ -11,14 +11,23 @@ st.warning("Simulation uniquement : aucun ordre réel n'est passé. Les performa
 
 @st.cache_data(show_spinner=False)
 def get_data(symbol: str, interval: str, limit: int) -> pd.DataFrame:
-    url = "https://api.binance.com/api/v3/klines"
-    r = requests.get(url, params={"symbol": symbol, "interval": interval, "limit": limit}, timeout=15)
+    # Source : Yahoo Finance (gratuit, sans cle). Binance bloque les serveurs Streamlit.
+    yahoo_symbol = symbol.replace("USDT", "-USD")
+    yahoo_interval = {"1d": "1d", "4h": "1h", "1h": "1h"}[interval]
+    range_ = "max" if interval == "1d" else "730d"
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(url, params={"interval": yahoo_interval, "range": range_},
+                     headers=headers, timeout=20)
     r.raise_for_status()
-    cols = ["t", "o", "h", "l", "c", "v", "ct", "qv", "n", "tb", "tq", "i"]
-    df = pd.DataFrame(r.json(), columns=cols)
-    df["date"] = pd.to_datetime(df["t"], unit="ms")
-    df["close"] = df["c"].astype(float)
-    return df[["date", "close"]]
+    res = r.json()["chart"]["result"][0]
+    df = pd.DataFrame({
+        "date": pd.to_datetime(res["timestamp"], unit="s"),
+        "close": res["indicators"]["quote"][0]["close"],
+    }).dropna()
+    if interval == "4h":
+        df = df.set_index("date").resample("4h").last().dropna().reset_index()
+    return df.tail(limit).reset_index(drop=True)
 
 
 def backtest(df, fast, slow, trend, fee, stop, trail, risk_frac, vol_cap, prudent, capital):
