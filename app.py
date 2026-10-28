@@ -107,6 +107,10 @@ if run:
     except Exception as e:
         st.error(f"Impossible de télécharger les données : {e}")
         st.stop()
+    st.caption(f"{len(df)} bougies reçues, du {df['date'].iloc[0].date()} au {df['date'].iloc[-1].date()}" if len(df) else "Aucune bougie reçue")
+    if len(df) < max(trend, slow, 21) + 30:
+        st.error(f"Pas assez de données : {len(df)} bougies reçues, il en faut au moins {max(trend, slow, 21) + 30}. Essaie une autre paire ou un autre intervalle.")
+        st.stop()
     eq, trades, mb, ms, start_i = backtest(df, fast, slow, trend, fee, stop, trail, risk_frac, vol_cap, prudent, capital)
     bh = df["close"].iloc[-1] / df["close"].iloc[start_i] - 1
     ret = eq.iloc[-1] / capital - 1
